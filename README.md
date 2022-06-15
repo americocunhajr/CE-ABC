@@ -33,4 +33,4 @@ We ask the code users to cite the following manuscript in any publications repor
 
 ## Funding
 
-<img src="logo/cnpq.png" width="20%"> &nbsp; &nbsp; <img src="logo/capes.png" width="10%">  &nbsp; &nbsp; &nbsp; <img src="logo/faperj.jpg" width="20%">
+<img src="logo/cnpq.png" width="20%"> &nbsp; &nbsp; <img src="logo/capes.png" width="10%">  &nbsp; &nbsp; &nbsp; <img src="logo/faperj.jpg" width="20%"> &nbsp; &nbsp; &nbsp; <img src="logo/epsrc.png" width="18%"> 
