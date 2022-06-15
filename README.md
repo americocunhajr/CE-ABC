@@ -1,6 +1,6 @@
 <img src="logo/CE-ABC.png" width="40%">
 
-**CE-ABC** repository stores a Matlab code that implements a framework for uncertainty quantification in mechanistic epidemic models defined by ordinary differential equations. More details in the following paper:
+**CE-ABC** repository stores a Matlab code that implements a framework for uncertainty quantification in mechanistic epidemic models defined by ordinary differential equations which combines cross-entropy method for optimization and approximate Bayesian computation for statistical inference. More details in the following paper:
 - *A. Cunha Jr, D. A. W. Barton, and T. G. Ritto, Uncertainty quantification in mechanistic epidemic models via cross-entropy approximate Bayesian computation, Preprint, 2022*
 
 ## Reproducibility
