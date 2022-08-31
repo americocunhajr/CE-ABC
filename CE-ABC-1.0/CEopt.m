@@ -17,7 +17,7 @@
 %  The goal here is to minimize a scalar objective function defined
 %  in a known rectangular domain (feasible region). For constrained
 %  optimization problems, formulations based on penalty method (or 
-%  augmented Lagrangian method) is expected, the user must provide
+%  augmented Lagrangian method) are expected, the user must provide
 %  an unconstrained objective function, which incorporates in its
 %  definition of all the equality constraints of the original problem.
 %  
@@ -30,7 +30,7 @@
 %  Input:
 %  fun    - objective function
 %  x0     - initial mean
-%  sigma0 - intial standard deviation
+%  sigma0 - initial standard deviation
 %  lb     - lower bound
 %  ub     - upper bound
 %  CEobj  - Cross-Entropy object struct
@@ -248,7 +248,7 @@ function [X_opt,F_opt,CEobj] = CEopt(fun,x0,sigma0,lb,ub,CEobj)
     % preallocate memory for the standard deviation matrix
     CEobj.sigma = zeros(maxiter,Nvars);
 
-    % preallocate memory for the error weigthed vector
+    % preallocate memory for the error weighted vector
     CEobj.err_w = zeros(maxiter,Nvars);
     
     % preallocate memory for the error weighted norm
@@ -260,10 +260,10 @@ function [X_opt,F_opt,CEobj] = CEopt(fun,x0,sigma0,lb,ub,CEobj)
     % initialize ObjFunc minimum value
     F_opt = Inf;
 
-    % initialize mean value
+    % initialize the mean value
     mu = x0;
 
-    % initialize standard deviation
+    % initialize the standard deviation
     sigma = sigma0;
     
     % convergence indicator
@@ -332,7 +332,7 @@ function [X_opt,F_opt,CEobj] = CEopt(fun,x0,sigma0,lb,ub,CEobj)
         CEobj.sigma(t,:)    = sigma;
         CEobj.err_wrms(t,:) = err_wrms;
         
-        % print values on screen
+        % print values on the screen
         if PRINT_ON
             PrintScreen(t,F_min,err_wrms,mu);
         end
