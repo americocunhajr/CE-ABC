@@ -27,13 +27,13 @@
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-function F = MyModel1(param,tspan,IC)
+function F = MyModel1(x,tspan,IC)
 
     % preallocate memory for the model response
     F = zeros(length(tspan),2);
 
 	% ODE solver Runge-Kutta45
-	[time,ymodel] = ode45(@(t,y)rhs_SEIRpAHD(t,y,param),tspan,IC);
+	[time,ymodel] = ode45(@(t,y)rhs_SEIRpAHD(t,y,x),tspan,IC);
     
     % model response
     F(:,1) = ymodel(:,6);

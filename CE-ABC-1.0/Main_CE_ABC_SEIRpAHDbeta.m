@@ -115,7 +115,7 @@ data_train  = [DataH_train DataD_train];
 Nvalid = length(DataH_valid);
 
 % weights parameters
-weigths = [0.5; 0.5];
+weigths = [0.75; 0.25];
 
 toc
 % -----------------------------------------------------------
@@ -185,7 +185,7 @@ gamma_max = 1/7;
 % hospitalization rate (days^-1)
 rho     = 0.01*(1/7);
 rho_min = 0.01*(1/21);
-rho_max = 0.05*(1/5);
+rho_max = 0.01*(1/1);
 % rho     = (1/6);
 % rho_min = (1/21);
 % rho_max = (1/5);
@@ -238,7 +238,8 @@ tau_beta_min = Day0_train;
 tau_beta_max = DayEnd_valid;
 
 % parameters vector
-param = [beta alpha fE gamma rho delta kappaA kappaH epsilonH ...
+param = [beta alpha fE gamma rho delta ...
+         kappaA kappaH epsilonH ...
          beta_inf eta tau_beta];
 
 % initial conditions for a virgin population
@@ -255,7 +256,7 @@ S0 = N0-D0-H0-A0-R0-I0-E0; % initial susceptible  (number of individuals)
 IC0 = [S0 E0 I0 R0 A0 H0 D0 N0];
 
 % initial condition compatible with initial deaths
-IC = state_SEIRpAHD(param,tspan0,IC0,DataH_train(1),DataD_train(1));
+IC = GetState_SEIRpAHD(param,tspan0,IC0,DataH_train(1),DataD_train(1));
 
 % model function
 fun = @(x) MyModel2(x,tspan,IC);
@@ -364,6 +365,12 @@ ABCobj.weigths = weigths;
 % parameters low-order statistics
 mu    = CEobj.x(end,:)';
 sigma = CEobj.sigma(end,:)';
+
+% prior for ABC
+ABCobj.prior = 'TruncGaussian';
+%ABCobj.prior = 'LogNormal';
+%ABCobj.prior = 'Gamma';
+%ABCobj.prior = 'Uniform';
 
 % ABC algorithm
 [x_best,y_best,ABCobj] = ABC(fun,data_train,lb,ub,mu,sigma,ABCobj);

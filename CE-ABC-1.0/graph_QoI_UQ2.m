@@ -1,13 +1,13 @@
 % -----------------------------------------------------------------
-%  graph_QoI_UQ.m
+%  graph_QoI_UQ2.m
 % ----------------------------------------------------------------- 
-function fig = graph_QoI_UQ(time1,yraw1,time2,yraw2,samples,...
-                            time,yopt,ybest,ymedian,ylow,yupp,graphobj)
+function fig = graph_QoI_UQ2(time1,yraw1,time2,yraw2,samples,...
+                            time,ybest,ymedian,ylow,yupp,graphobj)
     
     % check number of arguments
-    if nargin < 12
+    if nargin < 11
         error('Too few inputs.')
-    elseif nargin > 12
+    elseif nargin > 11
         error('Too many inputs.')
     end
 
@@ -18,10 +18,6 @@ function fig = graph_QoI_UQ(time1,yraw1,time2,yraw2,samples,...
     
     if length(time2) ~= length(yraw2)
         error('time2 and yraw2 vectors must be same length')
-    end
-
-    if length(time) ~= length(yopt)
-        error('time and yopt vectors must be same length')
     end
     
     if length(time) ~= length(ybest)
@@ -63,10 +59,6 @@ function fig = graph_QoI_UQ(time1,yraw1,time2,yraw2,samples,...
         yraw2=yraw2';
     end
     
-    if find( size(yopt) == max(size(yopt)) ) < 2
-        yopt=yopt';
-    end
-    
     if find( size(ybest) == max(size(ybest)) ) < 2
         ybest=ybest';
     end
@@ -88,12 +80,11 @@ function fig = graph_QoI_UQ(time1,yraw1,time2,yraw2,samples,...
     
     fig = figure('Name',graphobj.gname,'NumberTitle','off');
     
-    fh7 = plot(time ,samples,'-'  );
+    fh6 = plot(time ,samples,'-'  );
     hold all
-    fh6 = fill([time fliplr(time)],[yupp fliplr(ylow)],graphobj.colorT);
-    fh5 = plot(time ,ymedian,'-'  );
-    fh4 = plot(time ,ybest  ,'--' );
-    fh3 = plot(time ,yopt   ,'-.' );
+    fh5 = fill([time fliplr(time)],[yupp fliplr(ylow)],graphobj.colorT);
+    fh4 = plot(time ,ymedian,'-'  );
+    fh3 = plot(time ,ybest  ,'--' );
     fh2 = plot(time2,yraw2  ,'*--');
     fh1 = plot(time1,yraw1  ,'o--');
     
@@ -115,8 +106,7 @@ function fig = graph_QoI_UQ(time1,yraw1,time2,yraw2,samples,...
     set(fh4,'DisplayName',graphobj.leg4);
     set(fh5,'DisplayName',graphobj.leg5);
     set(fh6,'DisplayName',graphobj.leg6);
-    set(fh7,'DisplayName',graphobj.leg7);
-    leg         = [fh6; fh7(1); fh5; fh4; fh3; fh1; fh2];
+    leg         = [fh5; fh6(1); fh4; fh3; fh1; fh2];
     leg =  legend(leg  ,'Location','Best');
     %icons       = findobj(icons,'Type'    ,'Patch')
     %set(icons,'FaceAlpha',0.25)
@@ -141,11 +131,10 @@ function fig = graph_QoI_UQ(time1,yraw1,time2,yraw2,samples,...
     
     set(fh1,'Color','m'           ,'LineWidth',0.5)
     set(fh2,'Color','c'           ,'LineWidth',0.5)
-    set(fh3,'Color',graphobj.color,'LineWidth',1)
-    set(fh4,'Color',graphobj.color,'LineWidth',2)
-    set(fh5,'Color',graphobj.color,'LineWidth',3)
-    set(fh7,'Color',MyGray        ,'LineWidth',0.5)
-    set(fh6,'EdgeColor','w')
+    set(fh3,'Color',graphobj.color,'LineWidth',2)
+    set(fh4,'Color',graphobj.color,'LineWidth',3)
+    set(fh6,'Color',MyGray        ,'LineWidth',0.5)
+    set(fh5,'EdgeColor','w')
     set(gca,'XTickLabelRotation',30)
     
 	title(graphobj.gtitle,'FontSize',20,'FontName','Helvetica');

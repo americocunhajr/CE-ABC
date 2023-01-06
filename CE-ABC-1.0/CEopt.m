@@ -4,7 +4,7 @@
 %  programmer: Americo Cunha Jr
 %              americo.cunhajr@gmail.com
 %
-%  last updated: April 23, 2022
+%  last updated: December 21, 2022
 % -----------------------------------------------------------------
 %  This routine employs the Cross-entropy method to solve the 
 %  following optimization problem
@@ -17,7 +17,7 @@
 %  The goal here is to minimize a scalar objective function defined
 %  in a known rectangular domain (feasible region). For constrained
 %  optimization problems, formulations based on penalty method (or 
-%  augmented Lagrangian method) are expected, the user must provide
+%  augmented Lagrangian method) is expected, the user must provide
 %  an unconstrained objective function, which incorporates in its
 %  definition of all the equality constraints of the original problem.
 %  
@@ -30,7 +30,7 @@
 %  Input:
 %  fun    - objective function
 %  x0     - initial mean
-%  sigma0 - initial standard deviation
+%  sigma0 - intial standard deviation
 %  lb     - lower bound
 %  ub     - upper bound
 %  CEobj  - Cross-Entropy object struct
@@ -225,7 +225,7 @@ function [X_opt,F_opt,CEobj] = CEopt(fun,x0,sigma0,lb,ub,CEobj)
 
     % print on screen flag
     if ~isfield(CEobj, 'PRINT_ON')
-        CEobj.PRINT_ON = 0;
+        CEobj.PRINT_ON = 1;
     end
     
     PRINT_ON = CEobj.PRINT_ON;
@@ -248,7 +248,7 @@ function [X_opt,F_opt,CEobj] = CEopt(fun,x0,sigma0,lb,ub,CEobj)
     % preallocate memory for the standard deviation matrix
     CEobj.sigma = zeros(maxiter,Nvars);
 
-    % preallocate memory for the error weighted vector
+    % preallocate memory for the error weigthed vector
     CEobj.err_w = zeros(maxiter,Nvars);
     
     % preallocate memory for the error weighted norm
@@ -260,10 +260,10 @@ function [X_opt,F_opt,CEobj] = CEopt(fun,x0,sigma0,lb,ub,CEobj)
     % initialize ObjFunc minimum value
     F_opt = Inf;
 
-    % initialize the mean value
+    % initialize mean value
     mu = x0;
 
-    % initialize the standard deviation
+    % initialize standard deviation
     sigma = sigma0;
     
     % convergence indicator
@@ -332,7 +332,7 @@ function [X_opt,F_opt,CEobj] = CEopt(fun,x0,sigma0,lb,ub,CEobj)
         CEobj.sigma(t,:)    = sigma;
         CEobj.err_wrms(t,:) = err_wrms;
         
-        % print values on the screen
+        % print values on screen
         if PRINT_ON
             PrintScreen(t,F_min,err_wrms,mu);
         end
@@ -354,104 +354,174 @@ end
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-% trandn - truncated normal generator
+% trandn
 % -----------------------------------------------------------------
-% * efficient generator of a vector of length(l)=length(u)
-% from the standard multivariate normal distribution,
-% truncated over the region [l,u];
-% infinite values for 'u' and 'l' are accepted;
-% * Remark:
-% If you wish to simulate a random variable
-% 'Z' from the non-standard Gaussian N(m,s^2)
-% conditional on l<Z<u, then first simulate
-% X=trandn((l-m)/s,(u-m)/s) and set Z=m+s*X;
+%  This function is an efficient generator of a random vector of 
+%  dimension length(l)=length(u) from the standard multivariate
+%  normal distribution, truncated over the region [l,u]. Infinite
+%  values for bounds 'u' and 'l' are accepted.
 % 
-% Reference: 
-% Botev, Z. I. (2016). "The normal law under linear restrictions: 
-% simulation and estimation via minimax tilting". Journal of the 
-% Royal Statistical Society: Series B (Statistical Methodology). 
-% doi:10.1111/rssb.12162
+%  Remark:
+%  If you wish to simulate a random variable 'Z' from the 
+%  non-standard Gaussian N(m,s^2) conditional on l<Z<u, then 
+%  first simulate X = trandn((l-m)/s,(u-m)/s) and set Z=m+s*X.
+% 
+%  Input:
+%  lb - (Nvars x 1) lower bound
+%  ub - (Nvars x 1) upper bound
+%  
+%  Output:
+%  x - (Nvars x 1) random vector with multiv. distribution N(0,1)
+% 
+%  References:
+%  Botev, Z. I. (2016). "The normal law under linear restrictions: 
+%  simulation and estimation via minimax tilting". Journal of the 
+%  Royal Statistical Society: Series B (Statistical Methodology). 
+%  https://doi.org/10.1111/rssb.12162
+%  
+%  MATLAB Central File Exchange:
+%  Z. Botev, Truncated Normal Generator
+%  shorturl.at/hntuB
 % -----------------------------------------------------------------
-function x=trandn(l,u)
-    l=l(:);u=u(:); % make 'l' and 'u' column vectors
+function x = trandn(l,u)
+    l = l(:); u = u(:); % make 'l' and 'u' column vectors
     if length(l)~=length(u)
         error('Truncation limits have to be vectors of the same length')
     end
-    x=nan(size(l));
-    a=.66; % treshold for switching between methods
+    x = NaN(size(l));
+    a = .66; % treshold for switching between methods
     % threshold can be tuned for maximum speed for each Matlab version
     % three cases to consider:
-    % case 1: a<l<u
-    I=l>a;
+    % case 1: a < l < u
+    I = l > a;
     if any(I)
-        tl=l(I); tu=u(I); x(I)=ntail(tl,tu);
+        tl = l(I); tu = u(I); x(I) = ntail(tl,tu);
     end
-    % case 2: l<u<-a
-    J=u<-a;
+    % case 2: l < u < -a
+    J = u < -a;
     if any(J)
-        tl=-u(J); tu=-l(J); x(J)=-ntail(tl,tu);
+        tl=-u(J); tu = -l(J); x(J) = -ntail(tl,tu);
     end
     % case 3: otherwise use inverse transform or accept-reject
-    I=~(I|J);
-    if  any(I)
-        tl=l(I); tu=u(I); x(I)=tn(tl,tu);
+    I = ~(I|J);
+    if any(I)
+       tl = l(I); tu = u(I); x(I) = tn(tl,tu);
     end
 end
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-% ntail - samples a column vector of length=length(l)=length(u)
-% from the standard multivariate normal distribution,
-% truncated over the region [l,u], where l>0 and
-% l and u are column vectors;
-% uses acceptance-rejection from Rayleigh distr. 
-% similar to Marsaglia (1964);
+% ntail
 % -----------------------------------------------------------------
-function x=ntail(l,u)
-    c=l.^2/2; n=length(l); f=expm1(c-u.^2/2);
-    x=c-reallog(1+rand(n,1).*f); % sample using Rayleigh
+%  This function samples a column vector of dimension 
+%  length=length(l)=length(u) from the standard multivariate
+%  normal distribution, truncated over the region [l,u], where 
+%  l > 0 and l and u are column vectors. It uses a sampling
+%  algorithm based on acceptance-rejection from a Rayleigh 
+%  distribution similar to Marsaglia (1964).
+% 
+%  Input:
+%  lb - (Nvars x 1) lower bound
+%  ub - (Nvars x 1) upper bound
+%  
+%  Output:
+%  x - (Nvars x 1) random vector with multiv. distribution N(0,1)
+%  
+%  References:
+%  Botev, Z. I. (2016). "The normal law under linear restrictions: 
+%  simulation and estimation via minimax tilting". Journal of the 
+%  Royal Statistical Society: Series B (Statistical Methodology). 
+%  https://doi.org/10.1111/rssb.12162
+%  
+%  MATLAB Central File Exchange:
+%  Z. Botev, Truncated Normal Generator
+%  shorturl.at/hntuB
+% -----------------------------------------------------------------
+function x = ntail(l,u)
+    c = l.^2/2; n = length(l); f = expm1(c-u.^2/2);
+    x = c - reallog(1+rand(n,1).*f); % sample using Rayleigh
     % keep list of rejected
-    I=find(rand(n,1).^2.*x>c); d=length(I);
-    while d>0 % while there are rejections
-        cy=c(I); % find the thresholds of rejected
-        y=cy-reallog(1+rand(d,1).*f(I));
-        idx=rand(d,1).^2.*y<cy; % accepted
-        x(I(idx))=y(idx); % store the accepted
-        I=I(~idx); % remove accepted from list
-        d=length(I); % number of rejected
+    I = find(rand(n,1).^2.*x>c); d = length(I);
+    while d > 0           % while there are rejections
+               cy = c(I); % find the thresholds of rejected
+                y = cy - reallog(1+rand(d,1).*f(I));
+              idx = rand(d,1).^2.*y<cy; % accepted
+        x(I(idx)) = y(idx);             % store the accepted
+                I = I(~idx);            % remove accepted from list
+                d = length(I);          % number of rejected
     end
     x=sqrt(2*x); % this Rayleigh transform can be delayed till the end
 end
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-% tn - samples a column vector of length=length(l)=length(u)
-% from the standard multivariate normal distribution,
-% truncated over the region [l,u], where -a<l<u<a for some
-% 'a' and l and u are column vectors;
-% uses acceptance rejection and inverse-transform method;
+% tn
 % -----------------------------------------------------------------
-function x=tn(l,u)
-    tol=2; % controls switch between methods
+%  This function samples a column vector  of dimension 
+%  length=length(l)=length(u) from the standard multivariate
+%  normal distribution, truncated over the region [l,u], where 
+%  -a < l < u < a for some 'a' and l and u are column vectors.
+%  It uses acceptance rejection and inverse-transform method.
+%  
+%  Input:
+%  lb - (Nvars x 1) lower bound
+%  ub - (Nvars x 1) upper bound
+%  
+%  Output:
+%  x - (Nvars x 1) random vector with multiv. distribution N(0,1)
+%  
+%  References:
+%  Botev, Z. I. (2016). "The normal law under linear restrictions: 
+%  simulation and estimation via minimax tilting". Journal of the 
+%  Royal Statistical Society: Series B (Statistical Methodology). 
+%  https://doi.org/10.1111/rssb.12162
+%  
+%  MATLAB Central File Exchange:
+%  Z. Botev, Truncated Normal Generator
+%  shorturl.at/hntuB
+% -----------------------------------------------------------------
+function x = tn(l,u)
+    tol = 2; % controls switch between methods
     % threshold can be tuned for maximum speed for each platform
-    % case: abs(u-l)>tol, uses accept-reject from randn
-    I=abs(u-l)>tol; x=l;
+    % case: abs(u-l) > tol, uses accept-reject from randn
+    I = abs(u-l) > tol; x = l;
     if any(I)
-        tl=l(I); tu=u(I); x(I)=trnd(tl,tu);
+        tl = l(I); tu = u(I); x(I) = trnd(tl,tu);
     end
-    % case: abs(u-l)<tol, uses inverse-transform
-    I=~I;
+    % case: abs(u-l) < tol, uses inverse-transform
+    I = ~I;
     if any(I)
-        tl=l(I); tu=u(I); pl=erfc(tl/sqrt(2))/2; pu=erfc(tu/sqrt(2))/2;
-        x(I)=sqrt(2)*erfcinv(2*(pl-(pl-pu).*rand(size(tl))));
+        tl = l(I); tu = u(I); 
+        pl = erfc(tl/sqrt(2))/2; pu = erfc(tu/sqrt(2))/2;
+        x(I) = sqrt(2)*erfcinv(2*(pl-(pl-pu).*rand(size(tl))));
     end
 end
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-% trnd - uses acceptance rejection to simulate from truncated normal
+% trnd
 % -----------------------------------------------------------------
-function  x=trnd(l,u)
+%  This function uses an acceptance-rejection sampling strategy
+%  to simulate from truncated normal.
+%  
+%  Input:
+%  lb - (Nvars x 1) lower bound
+%  ub - (Nvars x 1) upper bound
+%  
+%  Output:
+%  x - (Nvars x 1) random vector with multiv. distribution N(0,1)
+%  
+%  References:
+%  Botev, Z. I. (2016). "The normal law under linear restrictions: 
+%  simulation and estimation via minimax tilting". Journal of the 
+%  Royal Statistical Society: Series B (Statistical Methodology). 
+%  https://doi.org/10.1111/rssb.12162
+%  
+%  MATLAB Central File Exchange:
+%  Z. Botev, Truncated Normal Generator
+%  shorturl.at/hntuB
+% -----------------------------------------------------------------
+function x = trnd(l,u)
     x=randn(size(l)); % sample normal
     % keep list of rejected
     I=find(x<l|x>u); d=length(I);
@@ -498,23 +568,25 @@ function  MyString = PrintScreen(t,F,err,x)
 
     % print header in the first level
     if t == 1 && Nvars <= 5
-        MyHeader = '\n level  func value   error        design variables \n';
+        MyHeader = ['\n level  func value       error',...
+                               '           design variables \n'];
         fprintf(MyHeader);
     elseif t == 1 && Nvars > 5
-        MyHeader = 'It is not possible to print more than 5 design variables on the screen \n';
+        MyHeader = ['It is not possible to print more than',...
+                            ' 5 design variables on the screen \n'];
         fprintf(MyHeader);
-        MyHeader = '\n level  func value   error \n';
+        MyHeader = '\n level  func value       error\n';
         fprintf(MyHeader);
     end
     
     % initial string with (t, F, err)
-    MyString = '\n %5g %+6.9f %+6.9f';
+    MyString = '\n %5g %+.9E %.9E';
     
 	% print values on screen
     if Nvars <= 5
         % string with (t, F, err, x)
         for i=1:Nvars
-            MyString = strcat(MyString,' %+6.9f');
+            MyString = strcat(MyString,' %+.6E');
         end
         % values with x
         fprintf(MyString,t,F,err,x);

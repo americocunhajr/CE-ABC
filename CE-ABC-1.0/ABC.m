@@ -178,6 +178,15 @@ function [x_best,y_best,ABCobj] = ABC(fun,data,lb,ub,mu,sigma,ABCobj)
     end
     
     weigths = ABCobj.weigths;
+
+    % prior distribution
+    if ~isfield(ABCobj, 'prior')
+        ABCobj.prior = 'TruncGaussian';
+    %elseif strcmp(ABCobj.prior,'TruncGaussian') ~= 1
+    %    ABCobj.prior = 'Uniform';
+    end
+    
+    prior = ABCobj.prior;
     
     % model parameters best value
     x_best = NaN*zeros(Nvars,1);
@@ -203,20 +212,48 @@ function [x_best,y_best,ABCobj] = ABC(fun,data,lb,ub,mu,sigma,ABCobj)
     ABCobj.y_accept = zeros(Nfun1*Nqoi,Ns);
     ABCobj.y_reject = zeros(Nfun1*Nqoi,Ns);
     
-    % limit vectors for standard truncated Gaussian
-	supp_l = ((lb - mu)./sigma)*ones(1,Ns);
-	supp_u = ((ub - mu)./sigma)*ones(1,Ns);
+    % sampling from the prior distribution
+    if strcmp(prior,'TruncGaussian')
 
-    % sampling from the prior distribution (truncated Gaussian)
-    for ii=1:Nvars
-        x_samples(ii,:) = mu(ii) + ...
-                          trandn(supp_l(ii,:),supp_u(ii,:))*sigma(ii);
-    end
+        % bounds for standard truncated Gaussian
+	    lb_z = ((lb - mu)./sigma)*ones(1,Ns);
+	    ub_z = ((ub - mu)./sigma)*ones(1,Ns);
+
+        % truncated Gaussian
+        for ii=1:Nvars
+            x_samples(ii,:) = mu(ii) + ...
+                              trandn(lb_z(ii,:),ub_z(ii,:))*sigma(ii);
+        end
+    elseif strcmp(prior,'LogNormal')
+
+        % logarithmic low-order moments
+	       mu_log = log((mu.^2)./sqrt(sigma.^2+mu.^2));
+	    sigma_log = sqrt(log(1+(sigma.^2)./(mu.^2)));
+
+        % lognormal
+        %x_samples = lognrnd(mu_log,sigma_log,Nvars,Ns);
+        for ii=1:Nvars
+            x_samples(ii,:) = lognrnd(mu_log(ii),sigma_log(ii),1,Ns);
+        end
+    elseif strcmp(prior,'Gamma')
+
+        % shape and scale parameters
+        shape_gam = (mu./sigma).^2;
+        scale_gam = (sigma.^2)./mu;
+
+        % gamma
+        %x_samples = gamrnd(shape_gam,scale_gam,Nvars,Ns);
+        for ii=1:Nvars
+            x_samples(ii,:) = gamrnd(shape_gam(ii),scale_gam(ii),Ns,1);
+        end
+    else
     
-    % sampling from the prior distribution (uniform)
-	%for ii=1:Nvars
-    %    ABCobj.x_samples(ii,:) = unifrnd(lb(ii,1),ub(ii,1),Ns,1);
-    %end
+        % uniform
+        %x_samples = unifrnd(lb,ub,Nvars,Ns);
+        for ii=1:Nvars
+            x_samples(ii,:) = unifrnd(lb(ii,1),ub(ii,1),Ns,1);
+        end
+    end
     
     % squared norm of data vector
     norm_data_pow2 = data'*data;
@@ -318,147 +355,216 @@ end
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-% trandn - truncated normal generator
+% trandn
 % -----------------------------------------------------------------
-% * efficient generator of a vector of length(l)=length(u)
-% from the standard multivariate normal distribution,
-% truncated over the region [l,u];
-% infinite values for 'u' and 'l' are accepted;
-% * Remark:
-% If you wish to simulate a random variable
-% 'Z' from the non-standard Gaussian N(m,s^2)
-% conditional on l<Z<u, then first simulate
-% X=trandn((l-m)/s,(u-m)/s) and set Z=m+s*X;
+%  This function is an efficient generator of a random vector of 
+%  dimension length(l)=length(u) from the standard multivariate
+%  normal distribution, truncated over the region [l,u]. Infinite
+%  values for bounds 'u' and 'l' are accepted.
 % 
-% Reference: 
-% Botev, Z. I. (2016). "The normal law under linear restrictions: 
-% simulation and estimation via minimax tilting". Journal of the 
-% Royal Statistical Society: Series B (Statistical Methodology). 
-% doi:10.1111/rssb.12162
+%  Remark:
+%  If you wish to simulate a random variable 'Z' from the 
+%  non-standard Gaussian N(m,s^2) conditional on l<Z<u, then 
+%  first simulate X = trandn((l-m)/s,(u-m)/s) and set Z=m+s*X.
+% 
+%  Input:
+%  lb - (Nvars x 1) lower bound
+%  ub - (Nvars x 1) upper bound
+%  
+%  Output:
+%  x - (Nvars x 1) random vector with multiv. distribution N(0,1)
+% 
+%  References:
+%  Botev, Z. I. (2016). "The normal law under linear restrictions: 
+%  simulation and estimation via minimax tilting". Journal of the 
+%  Royal Statistical Society: Series B (Statistical Methodology). 
+%  https://doi.org/10.1111/rssb.12162
+%  
+%  MATLAB Central File Exchange:
+%  Z. Botev, Truncated Normal Generator
+%  shorturl.at/hntuB
 % -----------------------------------------------------------------
-function x=trandn(l,u)
-    l=l(:);u=u(:); % make 'l' and 'u' column vectors
+function x = trandn(l,u)
+    l = l(:); u = u(:); % make 'l' and 'u' column vectors
     if length(l)~=length(u)
         error('Truncation limits have to be vectors of the same length')
     end
-    x=nan(size(l));
-    a=.66; % treshold for switching between methods
+    x = NaN(size(l));
+    a = .66; % treshold for switching between methods
     % threshold can be tuned for maximum speed for each Matlab version
     % three cases to consider:
-    % case 1: a<l<u
-    I=l>a;
+    % case 1: a < l < u
+    I = l > a;
     if any(I)
-        tl=l(I); tu=u(I); x(I)=ntail(tl,tu);
+        tl = l(I); tu = u(I); x(I) = ntail(tl,tu);
     end
-    % case 2: l<u<-a
-    J=u<-a;
+    % case 2: l < u < -a
+    J = u < -a;
     if any(J)
-        tl=-u(J); tu=-l(J); x(J)=-ntail(tl,tu);
+        tl=-u(J); tu = -l(J); x(J) = -ntail(tl,tu);
     end
     % case 3: otherwise use inverse transform or accept-reject
-    I=~(I|J);
-    if  any(I)
-        tl=l(I); tu=u(I); x(I)=tn(tl,tu);
+    I = ~(I|J);
+    if any(I)
+       tl = l(I); tu = u(I); x(I) = tn(tl,tu);
     end
 end
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-% ntail - samples a column vector of length=length(l)=length(u)
-% from the standard multivariate normal distribution,
-% truncated over the region [l,u], where l>0 and
-% l and u are column vectors;
-% uses acceptance-rejection from Rayleigh distr. 
-% similar to Marsaglia (1964);
+% ntail
 % -----------------------------------------------------------------
-function x=ntail(l,u)
-    c=l.^2/2; n=length(l); f=expm1(c-u.^2/2);
-    x=c-reallog(1+rand(n,1).*f); % sample using Rayleigh
+%  This function samples a column vector of dimension 
+%  length=length(l)=length(u) from the standard multivariate
+%  normal distribution, truncated over the region [l,u], where 
+%  l > 0 and l and u are column vectors. It uses a sampling
+%  algorithm based on acceptance-rejection from a Rayleigh 
+%  distribution similar to Marsaglia (1964).
+% 
+%  Input:
+%  lb - (Nvars x 1) lower bound
+%  ub - (Nvars x 1) upper bound
+%  
+%  Output:
+%  x - (Nvars x 1) random vector with multiv. distribution N(0,1)
+%  
+%  References:
+%  Botev, Z. I. (2016). "The normal law under linear restrictions: 
+%  simulation and estimation via minimax tilting". Journal of the 
+%  Royal Statistical Society: Series B (Statistical Methodology). 
+%  https://doi.org/10.1111/rssb.12162
+%  
+%  MATLAB Central File Exchange:
+%  Z. Botev, Truncated Normal Generator
+%  shorturl.at/hntuB
+% -----------------------------------------------------------------
+function x = ntail(l,u)
+    c = l.^2/2; n = length(l); f = expm1(c-u.^2/2);
+    x = c - reallog(1+rand(n,1).*f); % sample using Rayleigh
     % keep list of rejected
-    I=find(rand(n,1).^2.*x>c); d=length(I);
-    while d>0 % while there are rejections
-        cy=c(I); % find the thresholds of rejected
-        y=cy-reallog(1+rand(d,1).*f(I));
-        idx=rand(d,1).^2.*y<cy; % accepted
-        x(I(idx))=y(idx); % store the accepted
-        I=I(~idx); % remove accepted from list
-        d=length(I); % number of rejected
+    I = find(rand(n,1).^2.*x>c); d = length(I);
+    while d > 0           % while there are rejections
+               cy = c(I); % find the thresholds of rejected
+                y = cy - reallog(1+rand(d,1).*f(I));
+              idx = rand(d,1).^2.*y<cy; % accepted
+        x(I(idx)) = y(idx);             % store the accepted
+                I = I(~idx);            % remove accepted from list
+                d = length(I);          % number of rejected
     end
     x=sqrt(2*x); % this Rayleigh transform can be delayed till the end
 end
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-% tn - samples a column vector of length=length(l)=length(u)
-% from the standard multivariate normal distribution,
-% truncated over the region [l,u], where -a<l<u<a for some
-% 'a' and l and u are column vectors;
-% uses acceptance rejection and inverse-transform method;
+% tn
 % -----------------------------------------------------------------
-function x=tn(l,u)
-    tol=2; % controls switch between methods
+%  This function samples a column vector  of dimension 
+%  length=length(l)=length(u) from the standard multivariate
+%  normal distribution, truncated over the region [l,u], where 
+%  -a < l < u < a for some 'a' and l and u are column vectors.
+%  It uses acceptance rejection and inverse-transform method.
+%  
+%  Input:
+%  lb - (Nvars x 1) lower bound
+%  ub - (Nvars x 1) upper bound
+%  
+%  Output:
+%  x - (Nvars x 1) random vector with multiv. distribution N(0,1)
+%  
+%  References:
+%  Botev, Z. I. (2016). "The normal law under linear restrictions: 
+%  simulation and estimation via minimax tilting". Journal of the 
+%  Royal Statistical Society: Series B (Statistical Methodology). 
+%  https://doi.org/10.1111/rssb.12162
+%  
+%  MATLAB Central File Exchange:
+%  Z. Botev, Truncated Normal Generator
+%  shorturl.at/hntuB
+% -----------------------------------------------------------------
+function x = tn(l,u)
+    tol = 2; % controls switch between methods
     % threshold can be tuned for maximum speed for each platform
-    % case: abs(u-l)>tol, uses accept-reject from randn
-    I=abs(u-l)>tol; x=l;
+    % case: abs(u-l) > tol, uses accept-reject from randn
+    I = abs(u-l) > tol; x = l;
     if any(I)
-        tl=l(I); tu=u(I); x(I)=trnd(tl,tu);
+        tl = l(I); tu = u(I); x(I) = trnd(tl,tu);
     end
-    % case: abs(u-l)<tol, uses inverse-transform
-    I=~I;
+    % case: abs(u-l) < tol, uses inverse-transform
+    I = ~I;
     if any(I)
-        tl=l(I); tu=u(I); pl=erfc(tl/sqrt(2))/2; pu=erfc(tu/sqrt(2))/2;
-        x(I)=sqrt(2)*erfcinv(2*(pl-(pl-pu).*rand(size(tl))));
+          tl = l(I); tu = u(I); 
+          pl = erfc(tl/sqrt(2))/2; pu = erfc(tu/sqrt(2))/2;
+        x(I) = sqrt(2)*erfcinv(2*(pl-(pl-pu).*rand(size(tl))));
     end
 end
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-% trnd - uses acceptance-rejection to simulate from truncated normal
+% trnd
 % -----------------------------------------------------------------
-function  x=trnd(l,u)
-    x=randn(size(l)); % sample normal
+%  This function uses an acceptance-rejection sampling strategy
+%  to simulate from truncated normal.
+%  
+%  Input:
+%  lb - (Nvars x 1) lower bound
+%  ub - (Nvars x 1) upper bound
+%  
+%  Output:
+%  x - (Nvars x 1) random vector with multiv. distribution N(0,1)
+%  
+%  References:
+%  Botev, Z. I. (2016). "The normal law under linear restrictions: 
+%  simulation and estimation via minimax tilting". Journal of the 
+%  Royal Statistical Society: Series B (Statistical Methodology). 
+%  https://doi.org/10.1111/rssb.12162
+%  
+%  MATLAB Central File Exchange:
+%  Z. Botev, Truncated Normal Generator
+%  shorturl.at/hntuB
+% -----------------------------------------------------------------
+function x = trnd(l,u)
+    x = randn(size(l)); % sample normal
     % keep list of rejected
-    I=find(x<l|x>u); d=length(I);
-    while d>0 % while there are rejections
-        ly=l(I); % find the thresholds of rejected
-        uy=u(I);
-        y=randn(size(ly));
-        idx=y>ly&y<uy; % accepted
-        x(I(idx))=y(idx); % store the accepted
-        I=I(~idx); % remove accepted from list
-        d=length(I); % number of rejected
+    I = find(x < l | x > u); d = length(I);
+    while d > 0           % while there are rejections
+               ly = l(I); % find the thresholds of rejected
+               uy = u(I);
+                y = randn(size(ly));
+              idx = y > ly & y < uy; % accepted
+        x(I(idx)) = y(idx);          % store the accepted
+                I = I(~idx);         % remove accepted from list
+                d = length(I);       % number of rejected
     end
 end
 % -----------------------------------------------------------------
 
+% -----------------------------------------------------------------
+% textprogressbar
+% -----------------------------------------------------------------
+%  This function creates a text progress bar. It should be called 
+%  with a STRING argument to initialize and terminate. Otherwise, 
+%  the number corresponding to progress in % should be supplied.
+% 
+%  Inputs:   C   Either: Text string to initialize or terminate 
+%                        Percentage number to show progress 
+%  Outputs:  N/A
+%  Example:  Please refer to demo_textprogressbar.m
+%
+%  Author: Paul Proteus 
+%          (e-mail: proteus.paul (at) yahoo (dot) com)
+%  Version: 1.0
+%  Changes tracker:  29.06.2010  - First version
+%  
+%  Inspired by: 
+%  shorturl.at/bnBHX
 % -----------------------------------------------------------------
 function textprogressbar(c)
-% This function creates a text progress bar. It should be called 
-% with a STRING argument to initialize and terminate. Otherwise, 
-% the number corresponding to progress in % should be supplied.
-% 
-% INPUTS:   C   Either: Text string to initialize or terminate 
-%                       Percentage number to show progress 
-% OUTPUTS:  N/A
-% Example:  Please refer to demo_textprogressbar.m
-%
-% Author: Paul Proteus 
-%         (e-mail: proteus.paul (at) yahoo (dot) com)
-% Version: 1.0
-% Changes tracker:  29.06.2010  - First version
-% 
-% Inspired by: 
-% http://blogs.mathworks.com/loren/2007/08/01/monitoring-progress-of-a-calculation/
-
     % Initialization
     persistent strCR;           %   Carriage return pesistent variable
-
     % Vizualization parameters
     strPercentageLength = 10;   %   Length of percentage string (must be >5)
     strDotsMaximum      = 10;   %   The total number of dots in a progress bar
-
-    % Main 
-
+    % Main
     if isempty(strCR) && ~ischar(c)
         % Progress bar must be initialized with a string
         error('The text progress must be initialized with a string');
@@ -478,7 +584,6 @@ function textprogressbar(c)
         nDots = floor(c/100*strDotsMaximum);
         dotOut = ['[' repmat('=',1,nDots) repmat(' ',1,strDotsMaximum-nDots) ']'];
         strOut = [percentageOut dotOut];
-
         % Print it on the screen
         if strCR == -1
             % Don't do carriage return during first run
@@ -487,10 +592,8 @@ function textprogressbar(c)
             % Do it during all the other runs
             fprintf([strCR strOut]);
         end
-
         % Update carriage return
         strCR = repmat('\b',1,length(strOut)-1);
-
     else
         % Any other unexpected input
         error('Unsupported argument type');

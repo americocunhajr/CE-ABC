@@ -1,19 +1,19 @@
 % -----------------------------------------------------------------
-%  Main_CE_ABC_SEIRpAHD.m
+%  Main_ABC_SEIRpAHDbeta.m
 % -----------------------------------------------------------------
-%  This program uses the CE-ABC algorithm to identify parameters
-%  and propagate uncertainties in an SEIR(+AHD) epidemic model.
+%  This program uses the ABC algorithm to identify parameters
+%  and propagate uncertainties in an SEIR(+AHD)beta epidemic model.
 %  
 %  Reference:
 %  A. Cunha Jr , D. A. W. Barton, and T. G. Ritto
 %  Uncertainty  quantification  in  epidemic  models  via
-%  cross-entropy approximate Bayesian computation, 2022
+%  cross-entropy approximate Bayesian computation, 2023
 % -----------------------------------------------------------------
 %  programmers: Americo Cunha Jr (UERJ)
 %               David A. W. Barton (Univ. Bristol)
 %               Thiago G. Ritto (UFRJ)
 %
-%  last updated: May 26, 2022
+%  last updated: Dec 20, 2022
 % -----------------------------------------------------------------
 
 
@@ -30,8 +30,8 @@ timeStart = tic();
 % program header
 % ----------------------------------------------------------------
 disp(' ---------------------------------------------------------- ')
-disp(' Cross-Entropy Approximate Bayesian Computation (CE-ABC)    ')
-disp(' for UQ in a SEIR(+AHD) model                               ')
+disp(' Approximate Bayesian Computation (ABC)                     ')
+disp(' for UQ in a SEIR(+AHD)beta model                           ')
 disp('                                                            ')
 disp(' by                                                         ')
 disp(' Americo Cunha Jr (UERJ)                                    ')
@@ -44,7 +44,7 @@ disp(' ---------------------------------------------------------- ')
 
 % simulation information
 % -----------------------------------------------------------
-case_name = 'CE_ABC_SEIRpAHD';
+case_name = 'ABC_SEIRpAHDbeta';
 
 disp(' '); 
 disp([' Case Name: ',num2str(case_name)]);
@@ -185,7 +185,7 @@ gamma_max = 1/7;
 % hospitalization rate (days^-1)
 rho     = 0.01*(1/7);
 rho_min = 0.01*(1/21);
-rho_max = 0.05*(1/5);
+rho_max = 0.01*(1/1);
 % rho     = (1/6);
 % rho_min = (1/21);
 % rho_max = (1/5);
@@ -222,8 +222,25 @@ epsilonH     = 0.2;
 epsilonH_min = 0.1;
 epsilonH_max = 0.5;
 
+% final transmission rate (days^-1)
+beta_inf     = beta;
+beta_inf_min = beta_min;
+beta_inf_max = beta_max;
+
+% rate of change for beta (days^-1)
+eta_min = 0.0;
+eta_max = 10.0;
+eta     = 0.5*(eta_max+eta_min);
+
+% tranmission rate inflexion time (day)
+tau_beta     = 0.5*(DayEnd_valid+Day0_train);
+tau_beta_min = Day0_train;
+tau_beta_max = DayEnd_valid;
+
 % parameters vector
-param = [beta alpha fE gamma rho delta kappaA kappaH epsilonH];
+param = [beta alpha fE gamma rho delta ...
+         kappaA kappaH epsilonH ...
+         beta_inf eta tau_beta];
 
 % initial conditions for a virgin population
 N0 = 5.5e6;                % initial population   (number of individuals)
@@ -242,18 +259,17 @@ IC0 = [S0 E0 I0 R0 A0 H0 D0 N0];
 IC = GetState_SEIRpAHD(param,tspan0,IC0,DataH_train(1),DataD_train(1));
 
 % model function
-fun = @(x) MyModel1(x,tspan,IC);
+fun = @(x) MyModel2(x,tspan,IC);
 
 toc
 % -----------------------------------------------------------
 
 
-
-% CE optimization
+% ABC computation
 % -----------------------------------------------------------
 tic
 disp(' '); 
-disp(' --- CE optimization --- ');
+disp(' --- ABC computation --- ');
 disp(' ');
 disp('    ... ');
 disp(' ');
@@ -267,7 +283,10 @@ lb = [    beta_min; ...
          delta_min; ...
         kappaA_min; ...
         kappaH_min; ...
-      epsilonH_min];
+      epsilonH_min; ...
+      beta_inf_min; ... 
+           eta_min; ...
+      tau_beta_min];
 ub = [    beta_max; ...
          alpha_max; ...
             fE_max; ...
@@ -276,62 +295,13 @@ ub = [    beta_max; ...
          delta_max; ...
         kappaA_max; ...
         kappaH_max; ...
-      epsilonH_max];
+      epsilonH_max; ...
+      beta_inf_max; ... 
+           eta_max; ...
+      tau_beta_max];
 
-% Cost function
-J = @(x) MyCostFunc(x,fun,data_train,weigths);
-
-% initialize mean and std. dev. vectors
-x0     = (ub+lb)/2;
-sigma0 = (ub-lb)/sqrt(12);
-
-% maximum number of iterations
-CEobj.maxiter = 150;
-
-% absolute tolerance
-CEobj.atol = 0.001;
-
-% relative tolerance
-CEobj.rtol = 0.05;
-        
-% number of samples
-CEobj.N = 100;
-
-% elite samples percentage
-CEobj.rho = 0.1;
-
-% print on screen flag
-CEobj.PRINT_ON = 1;
-
-% smoothing parameter (0 < alpha <= 1) 
-% -- set alpha = 1 for no smoothing --
-CEobj.alpha = 0.7;
-
-% dynamic smoothing parameters
-% (0.8 <= beta <= 0.99)
-% (q is a interger between 5 and 10)
-CEobj.beta = 0.8;
-CEobj.q    = 5;
-
-% CE algorithm
-[x_opt,f_opt,CEobj] = CEopt(J,x0,sigma0,lb,ub,CEobj);
-
-toc
-% -----------------------------------------------------------
-
-
-
-% ABC computation
-% -----------------------------------------------------------
-tic
-disp(' '); 
-disp(' --- ABC computation --- ');
-disp(' ');
-disp('    ... ');
-disp(' ');
- 
 % number of ABC samples
-ABCobj.Ns= 2000;
+ABCobj.Ns= 100000;
 
 % error tolerance for ABC
 ABCobj.tol = 0.1;
@@ -340,11 +310,13 @@ ABCobj.tol = 0.1;
 ABCobj.weigths = weigths;
 
 % parameters low-order statistics
-mu    = CEobj.x(end,:)';
-sigma = CEobj.sigma(end,:)';
+mu    = param;
+sigma = [];
 
 % prior for ABC
-ABCobj.prior = 'TruncGaussian';
+%ABCobj.prior = 'TruncGaussian';
+ABCobj.prior = 'LogNormal';
+%ABCobj.prior = 'Gamma';
 %ABCobj.prior = 'Uniform';
 
 % ABC algorithm
@@ -363,11 +335,6 @@ disp(' --- computing statistics --- ');
 disp(' ');
 disp('    ... ');
 disp(' ');
-
-% quantities of interest optimal estimation
-y_opt     = fun(x_opt);
-QoI_H_opt = y_opt(:,1);
-QoI_D_opt = y_opt(:,2);
 
 % quantities of interest best estimation
 QoI_H_best = y_best(:,1);
@@ -401,6 +368,9 @@ QoI_D_upp = prctile(QoI_D_samples,r_plus);
 QoI_H_median = median(QoI_H_samples);
 QoI_D_median = median(QoI_D_samples);
 
+% parameters standard deviation
+sigma_abc = std(ABCobj.x_accept,[],2);
+
 toc
 % -----------------------------------------------------------
 
@@ -414,8 +384,8 @@ disp(' ');
 disp('    ... ');
 disp(' ');
 
-% ODE solver Runge-Kutta45    
-[time,y] = ode45(@(t,y)rhs_SEIRpAHD(t,y,x_best),tspan,IC);
+% ODE solver Runge-Kutta45
+[time,y] = ode45(@(t,y)rhs_SEIRpAHDbeta(t,y,x_best),tspan,IC);
 
 % define time series
 S = y(:,1);  % susceptible         (number of individuals)
@@ -460,23 +430,9 @@ disp(' ');
 % ..........................................................
 disp(' ');
 disp(' ...........................');
-disp('  CE Identified Parameters  ')
-disp(' ...........................');
-disp(['  beta     = ',num2str(x_opt(1))])
-disp(['  alpha    = ',num2str(x_opt(2))])
-disp(['  fE       = ',num2str(x_opt(3))])
-disp(['  gamma    = ',num2str(x_opt(4))])
-disp(['  rho      = ',num2str(x_opt(5))])
-disp(['  delta    = ',num2str(x_opt(6))])
-disp(['  kappaA   = ',num2str(x_opt(7))])
-disp(['  kappaH   = ',num2str(x_opt(8))])
-disp(['  epsilonH = ',num2str(x_opt(9))])
-disp(' ..........................');
-disp(' ');
-disp(' ...........................');
 disp('  ABC Identified Parameters ')
 disp(' ...........................');
-disp(['  beta     = ',num2str(x_best(1))])
+disp(['  beta0    = ',num2str(x_best(1))])
 disp(['  alpha    = ',num2str(x_best(2))])
 disp(['  fE       = ',num2str(x_best(3))])
 disp(['  gamma    = ',num2str(x_best(4))])
@@ -485,16 +441,9 @@ disp(['  delta    = ',num2str(x_best(6))])
 disp(['  kappaA   = ',num2str(x_best(7))])
 disp(['  kappaH   = ',num2str(x_best(8))])
 disp(['  epsilonH = ',num2str(x_best(9))])
-disp(' ..........................');
-disp(' ');
-disp(' ..........................');
-disp('  CE algorithm statistics  ')
-disp(' ..........................');
-disp(['  number of samples   = ',num2str(CEobj.N)])
-disp(['  elite set size      = ',num2str(CEobj.rho)])
-disp(['  absolute tolerance  = ',num2str(CEobj.atol)])
-disp(['  relative tolerance  = ',num2str(CEobj.rtol)])
-disp(['  error weigthed norm = ',num2str(CEobj.err_wrms(end,1))])
+disp(['  beta_inf = ',num2str(x_best(10))])
+disp(['  eta      = ',num2str(x_best(11))])
+disp(['  tau_beta = ',num2str(x_best(12))])
 disp(' ..........................');
 disp(' ');
 disp(' ..........................');
@@ -525,17 +474,16 @@ blackT = [192 192 192]/256;
 % ..........................................................
 graphobj.leg1 = 'Data: training';
 graphobj.leg2 = 'Data: validation';
-graphobj.leg3 = 'CE Optimal Fit';
-graphobj.leg4 = 'ABC Best Fit';
-graphobj.leg5 = 'ABC Median';
-graphobj.leg6 = '95% envelope';
-graphobj.leg7 = 'ABC samples';
+graphobj.leg3 = 'ABC Best Fit';
+graphobj.leg4 = 'ABC Median';
+graphobj.leg5 = '95% envelope';
+graphobj.leg6 = 'ABC samples';
 % ..........................................................
 
 
 % figs title
 % ..........................................................
-fig_title = 'SEIR(+AHD) model ';
+fig_title = 'SEIR(+AHD)beta model ';
 % ..........................................................
 
 
@@ -562,15 +510,14 @@ graphobj.flag   = 'eps';
 graphobj.color  = brown;
 graphobj.colorT = brownT;
 
-fig_UQ_H = graph_QoI_UQ(time_train,DataH_train,...
-                        time_valid,DataH_valid,...
-                                 QoI_H_samples,...
-                              time,QoI_H_opt,...
-                                   QoI_H_best,...
-                                   QoI_H_median,...
-                                   QoI_H_low,...
-                                   QoI_H_upp,...
-                                   graphobj);
+fig_UQ_H = graph_QoI_UQ2(time_train,DataH_train,...
+                         time_valid,DataH_valid,...
+                                    QoI_H_samples,...
+                               time,QoI_H_best,...
+                                    QoI_H_median,...
+                                    QoI_H_low,...
+                                    QoI_H_upp,...
+                                    graphobj);
 % ..........................................................
 
 
@@ -589,15 +536,14 @@ graphobj.flag   = 'eps';
 graphobj.color  = 'k';
 graphobj.colorT = blackT;
 
-fig_UQ_D = graph_QoI_UQ(time_train,DataD_train,...
-                        time_valid,DataD_valid,...
-                                 QoI_D_samples,...
-                              time,QoI_D_opt,...
-                                   QoI_D_best,...
-                                   QoI_D_median,...
-                                   QoI_D_low,...
-                                   QoI_D_upp,...
-                                   graphobj);
+fig_UQ_D = graph_QoI_UQ2(time_train,DataD_train,...
+                         time_valid,DataD_valid,...
+                                    QoI_D_samples,...
+                               time,QoI_D_best,...
+                                    QoI_D_median,...
+                                    QoI_D_low,...
+                                    QoI_D_upp,...
+                                    graphobj);
 % ..........................................................
 
 
@@ -614,7 +560,7 @@ graphobj.xlab   = [];
 graphobj.ylab   = [];
 graphobj.flag   = 'eps';
 
-%fig_ABC_samples = graph_SampleMatrix(ABCobj,graphobj);
+fig_ABC_samples = graph_SampleMatrix(ABCobj,graphobj);
 % ..........................................................
 
 % ..........................................................

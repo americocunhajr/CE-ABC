@@ -4,7 +4,7 @@
 %  This function defines the model function. It must be customized 
 %  according to your particular application.
 %  
-%  In this case it is adjusted to a SEIR(+AHD) epidemic model.
+%  In this case it is adjusted to a SEIR(+AHD)beta epidemic model.
 %
 %  Input:
 %  x     - model parameters vector
@@ -27,13 +27,13 @@
 % -----------------------------------------------------------------
 
 % -----------------------------------------------------------------
-function F = MyModel2(param,tspan,IC)
+function F = MyModel2(x,tspan,IC)
 
     % preallocate memory for the model response
     F = zeros(length(tspan),2);
 
 	% ODE solver Runge-Kutta45
-	[time,ymodel] = ode45(@(t,y)rhs_SEIRpAHDbeta(t,y,param),tspan,IC);
+	[time,ymodel] = ode45(@(t,y)rhs_SEIRpAHDbeta(t,y,x),tspan,IC);
     
     % model response
     F(:,1) = ymodel(:,6);

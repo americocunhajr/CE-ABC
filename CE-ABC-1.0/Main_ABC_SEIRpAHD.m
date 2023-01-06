@@ -1,5 +1,5 @@
 % -----------------------------------------------------------------
-%  Main_CE_ABC_SEIRpAHD.m
+%  Main_ABC_SEIRpAHD.m
 % -----------------------------------------------------------------
 %  This program uses the CE-ABC algorithm to identify parameters
 %  and propagate uncertainties in an SEIR(+AHD) epidemic model.
@@ -30,7 +30,7 @@ timeStart = tic();
 % program header
 % ----------------------------------------------------------------
 disp(' ---------------------------------------------------------- ')
-disp(' Cross-Entropy Approximate Bayesian Computation (CE-ABC)    ')
+disp(' Approximate Bayesian Computation (ABC)                     ')
 disp(' for UQ in a SEIR(+AHD) model                               ')
 disp('                                                            ')
 disp(' by                                                         ')
@@ -44,7 +44,7 @@ disp(' ---------------------------------------------------------- ')
 
 % simulation information
 % -----------------------------------------------------------
-case_name = 'CE_ABC_SEIRpAHD';
+case_name = 'ABC_SEIRpAHD';
 
 disp(' '); 
 disp([' Case Name: ',num2str(case_name)]);
@@ -185,7 +185,7 @@ gamma_max = 1/7;
 % hospitalization rate (days^-1)
 rho     = 0.01*(1/7);
 rho_min = 0.01*(1/21);
-rho_max = 0.05*(1/5);
+rho_max = 0.01*(1/1);
 % rho     = (1/6);
 % rho_min = (1/21);
 % rho_max = (1/5);
@@ -223,7 +223,8 @@ epsilonH_min = 0.1;
 epsilonH_max = 0.5;
 
 % parameters vector
-param = [beta alpha fE gamma rho delta kappaA kappaH epsilonH];
+param = [beta alpha fE gamma rho delta ...
+         kappaA kappaH epsilonH];
 
 % initial conditions for a virgin population
 N0 = 5.5e6;                % initial population   (number of individuals)
@@ -249,11 +250,11 @@ toc
 
 
 
-% CE optimization
+% ABC computation
 % -----------------------------------------------------------
 tic
 disp(' '); 
-disp(' --- CE optimization --- ');
+disp(' --- ABC computation --- ');
 disp(' ');
 disp('    ... ');
 disp(' ');
@@ -278,58 +279,10 @@ ub = [    beta_max; ...
         kappaH_max; ...
       epsilonH_max];
 
-% Cost function
-J = @(x) MyCostFunc(x,fun,data_train,weigths);
+% parameters low-order statistics
+mu    = [beta alpha fE gamma rho delta kappaA kappaH epsilonH];
+sigma = (ub-lb)/sqrt(12);
 
-% initialize mean and std. dev. vectors
-x0     = (ub+lb)/2;
-sigma0 = (ub-lb)/sqrt(12);
-
-% maximum number of iterations
-CEobj.maxiter = 150;
-
-% absolute tolerance
-CEobj.atol = 0.001;
-
-% relative tolerance
-CEobj.rtol = 0.05;
-        
-% number of samples
-CEobj.N = 100;
-
-% elite samples percentage
-CEobj.rho = 0.1;
-
-% print on screen flag
-CEobj.PRINT_ON = 1;
-
-% smoothing parameter (0 < alpha <= 1) 
-% -- set alpha = 1 for no smoothing --
-CEobj.alpha = 0.7;
-
-% dynamic smoothing parameters
-% (0.8 <= beta <= 0.99)
-% (q is a interger between 5 and 10)
-CEobj.beta = 0.8;
-CEobj.q    = 5;
-
-% CE algorithm
-[x_opt,f_opt,CEobj] = CEopt(J,x0,sigma0,lb,ub,CEobj);
-
-toc
-% -----------------------------------------------------------
-
-
-
-% ABC computation
-% -----------------------------------------------------------
-tic
-disp(' '); 
-disp(' --- ABC computation --- ');
-disp(' ');
-disp('    ... ');
-disp(' ');
- 
 % number of ABC samples
 ABCobj.Ns= 2000;
 
@@ -339,12 +292,10 @@ ABCobj.tol = 0.1;
 % ABC weights parameters
 ABCobj.weigths = weigths;
 
-% parameters low-order statistics
-mu    = CEobj.x(end,:)';
-sigma = CEobj.sigma(end,:)';
-
 % prior for ABC
 ABCobj.prior = 'TruncGaussian';
+%ABCobj.prior = 'LogNormal';
+%ABCobj.prior = 'Gamma';
 %ABCobj.prior = 'Uniform';
 
 % ABC algorithm
@@ -363,11 +314,6 @@ disp(' --- computing statistics --- ');
 disp(' ');
 disp('    ... ');
 disp(' ');
-
-% quantities of interest optimal estimation
-y_opt     = fun(x_opt);
-QoI_H_opt = y_opt(:,1);
-QoI_D_opt = y_opt(:,2);
 
 % quantities of interest best estimation
 QoI_H_best = y_best(:,1);
@@ -460,20 +406,6 @@ disp(' ');
 % ..........................................................
 disp(' ');
 disp(' ...........................');
-disp('  CE Identified Parameters  ')
-disp(' ...........................');
-disp(['  beta     = ',num2str(x_opt(1))])
-disp(['  alpha    = ',num2str(x_opt(2))])
-disp(['  fE       = ',num2str(x_opt(3))])
-disp(['  gamma    = ',num2str(x_opt(4))])
-disp(['  rho      = ',num2str(x_opt(5))])
-disp(['  delta    = ',num2str(x_opt(6))])
-disp(['  kappaA   = ',num2str(x_opt(7))])
-disp(['  kappaH   = ',num2str(x_opt(8))])
-disp(['  epsilonH = ',num2str(x_opt(9))])
-disp(' ..........................');
-disp(' ');
-disp(' ...........................');
 disp('  ABC Identified Parameters ')
 disp(' ...........................');
 disp(['  beta     = ',num2str(x_best(1))])
@@ -485,16 +417,6 @@ disp(['  delta    = ',num2str(x_best(6))])
 disp(['  kappaA   = ',num2str(x_best(7))])
 disp(['  kappaH   = ',num2str(x_best(8))])
 disp(['  epsilonH = ',num2str(x_best(9))])
-disp(' ..........................');
-disp(' ');
-disp(' ..........................');
-disp('  CE algorithm statistics  ')
-disp(' ..........................');
-disp(['  number of samples   = ',num2str(CEobj.N)])
-disp(['  elite set size      = ',num2str(CEobj.rho)])
-disp(['  absolute tolerance  = ',num2str(CEobj.atol)])
-disp(['  relative tolerance  = ',num2str(CEobj.rtol)])
-disp(['  error weigthed norm = ',num2str(CEobj.err_wrms(end,1))])
 disp(' ..........................');
 disp(' ');
 disp(' ..........................');
