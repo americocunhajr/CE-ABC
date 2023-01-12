@@ -34,6 +34,10 @@ We ask the code users to cite the following manuscript in any publications repor
 ## License
 **CE-ABC** is released under the MIT license. See the LICENSE file for details. All new contributions must be made under the MIT license.
 
+## Institutional support
+
+<img src="logo/uerj_logo_cor.jpeg" width="10%"> &nbsp; &nbsp; <img src="logo/logo_bristol.png" width="32%"> &nbsp; &nbsp; <img src="logo/logo_ufrj.png" width="32%">
+
 ## Funding
 
-<img src="logo/cnpq.png" width="20%"> &nbsp; &nbsp; <img src="logo/capes.png" width="10%">  &nbsp; &nbsp; &nbsp; <img src="logo/faperj.jpg" width="20%"> &nbsp; &nbsp; &nbsp; <img src="logo/epsrc.png" width="18%"> 
+<img src="logo/cnpq.png" width="20%"> &nbsp; &nbsp; <img src="logo/capes.png" width="10%">  &nbsp; &nbsp; &nbsp; <img src="logo/faperj.jpg" width="20%"> &nbsp; &nbsp; &nbsp; <img src="logo/epsrc.png" width="18%">
