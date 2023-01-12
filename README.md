@@ -1,7 +1,7 @@
 <img src="logo/CE-ABC.png" width="40%">
 
 **CE-ABC: Cross-Entropy Approximate Bayesian Computation** is a Matlab package that implements a framework for uncertainty quantification in mechanistic epidemic models defined by ordinary differential equations, which combines the cross-entropy method for optimization and approximate Bayesian computation for statistical inference. With some straightforward adaptations, CE-ABC strategy can also be applied to other systems (mechanical, electrical, coupled, etc). More details are in the following paper:
-- *A. Cunha Jr, D. A. W. Barton, and T. G. Ritto, Uncertainty quantification in mechanistic epidemic models via cross-entropy approximate Bayesian computation, Preprint, 2022*
+- *A. Cunha Jr, D. A. W. Barton, and T. G. Ritto, Uncertainty quantification in mechanistic epidemic models via cross-entropy approximate Bayesian computation, Preprint, 2023*
 
 ## Reproducibility
 
@@ -14,17 +14,17 @@ Simulations done with **CE-ABC** are fully reproducible, as can be seen on this 
 
 ## Citing this study
 We ask the code users to cite the following manuscript in any publications reporting work done with our code:
-- *A. Cunha Jr, D. A. W. Barton, and T. G. Ritto, Uncertainty quantification in mechanistic epidemic models via cross-entropy approximate Bayesian computation, Preprint, 2022*
+- *A. Cunha Jr, D. A. W. Barton, and T. G. Ritto, Uncertainty quantification in mechanistic epidemic models via cross-entropy approximate Bayesian computation, Preprint, 2023*
 
 ```
-@article{COVID19Waves2022,
+@article{CunhaJr2023p,
    author  = {A {Cunha~Jr} and D. A. W. Barton and T. G. Ritto},
    title   = {Uncertainty quantification in mechanistic epidemic models via cross-entropy approximate Bayesian computation},
    journal = {Preprint},
-   year    = {2022},
+   year    = {2023},
    volume  = {~},
    pages   = {~},
-   note    = {~},
+   doi    = {~},
 }
 ```
 
