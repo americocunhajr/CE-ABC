@@ -36,7 +36,7 @@ We ask the code users to cite the following manuscript in any publications repor
 
 ## Institutional support
 
-<img src="logo/uerj_logo_cor.jpeg" width="10%"> &nbsp; &nbsp; <img src="logo/logo_bristol.png" width="32%"> &nbsp; &nbsp; <img src="logo/logo_ufrj.png" width="32%">
+<img src="logo/logo_uerj_cor.png" width="10%"> &nbsp; &nbsp; <img src="logo/logo_bristol.png" width="32%"> &nbsp; &nbsp; <img src="logo/logo_ufrj.png" width="8%">
 
 ## Funding
 
