@@ -3,6 +3,9 @@
 **CE-ABC: Cross-Entropy Approximate Bayesian Computation** is a Matlab package that implements a framework for uncertainty quantification in mechanistic epidemic models defined by ordinary differential equations, which combines the cross-entropy method for optimization and approximate Bayesian computation for statistical inference. With some straightforward adaptations, CE-ABC strategy can also be applied to other systems (mechanical, electrical, coupled, etc). More details are in the following paper:
 - *A. Cunha Jr, D. A. W. Barton, and T. G. Ritto, Uncertainty quantification in mechanistic epidemic models via cross-entropy approximate Bayesian computation, Preprint, 2023*
 
+Preprint available at:
+https://arxiv.org/abs/2207.12111
+
 ## Reproducibility
 
 Simulations done with **CE-ABC** are fully reproducible, as can be seen on this <a href="https://codeocean.com/capsule/6653396/tree" target="_blank">CodeOcean capsule</a>.
@@ -24,7 +27,7 @@ We ask the code users to cite the following manuscript in any publications repor
    year    = {2023},
    volume  = {~},
    pages   = {~},
-   doi    = {~},
+   doi    = {https://doi.org/10.48550/arXiv.2207.12111},
 }
 ```
 
