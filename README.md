@@ -8,7 +8,7 @@ https://arxiv.org/abs/2207.12111
 
 ## Reproducibility
 
-Simulations done with **CE-ABC** are fully reproducible, as can be seen on this <a href="https://codeocean.com/capsule/6653396/tree" target="_blank">CodeOcean capsule</a>.
+Simulations done with **CE-ABC** are fully reproducible, as can be seen on this <a href="https://codeocean.com/capsule/5200426/tree/v2" target="_blank">CodeOcean capsule</a>.
 
 ## Authors
 - Americo Cunha Jr
