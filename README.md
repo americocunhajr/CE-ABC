@@ -95,8 +95,8 @@ If you use **CE-ABC** in your research, please cite the following publication:
 
 ### Institutional support
 
-<img src="logo/logo_uerj_color.jpeg" width="10%"> &nbsp; &nbsp; <img src="logo/logo_bristol.png" width="32%"> &nbsp; &nbsp; <img src="logo/logo_ufrj.png" width="8%">
+<img src="logo/logo_uerj.png" width="13%"> &nbsp; &nbsp; <img src="logo/logo_bristol.png" width="32%"> &nbsp; &nbsp; <img src="logo/logo_ufrj.png" width="8%">
 
 ### Funding
 
-<img src="logo/cnpq.png" width="20%"> &nbsp; &nbsp; <img src="logo/capes.png" width="10%">  &nbsp; &nbsp; &nbsp; <img src="logo/faperj.jpg" width="20%"> &nbsp; &nbsp; &nbsp; <img src="logo/epsrc.png" width="18%">
+<img src="logo/cnpq.png" width="20%"> &nbsp; &nbsp; <img src="logo/capes.png" width="10%">  &nbsp; &nbsp; &nbsp; <img src="logo/faperj.png" width="20%"> &nbsp; &nbsp; &nbsp; <img src="logo/epsrc.png" width="18%">
